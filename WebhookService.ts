@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import axios, { AxiosError } from 'axios';
 import { logger } from './logger';
 import prisma from './prismaClient';
