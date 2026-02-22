@@ -4,25 +4,39 @@ import { apiLimiter, ddosDetector, checkBlockedIP, ipRestriction, progressiveLim
 import { configureSecurity } from './middleware/security';
 import { apiKeyAuth } from './middleware/auth';
 import { authenticate, authorize, optionalAuth } from './middleware/authentication';
-import { requestLogger } from './middleware/logger';
-import { errorTracker } from './middleware/abuseDetection';
+import { loggingMiddleware, setupGlobalErrorHandling, errorTracker } from './middleware/logger';
+import { errorTracker as abuseDetector } from './middleware/abuseDetection';
 import { swaggerSpec } from './swagger';
 import { upload } from './middleware/upload';
 import { uploadDocument } from './controllers/DocumentController';
 import { getDashboardData, generateReport, exportData } from './controllers/AnalyticsController';
 import { applyPaymentSecurity, processPayment, getPaymentHistory, validatePayment } from './controllers/PaymentController';
-import { AuthenticationController } from './controllers/AuthenticationController';
-import { UserController } from './controllers/UserController';
-import { UserRole } from '@prisma/client';
+
 
 const app = express();
+
+// Initialize logging and monitoring
+logger.info('Application starting up', { 
+  nodeEnv: process.env.NODE_ENV,
+  version: process.env.npm_package_version 
+});
+
+// Initialize error tracking if DSN is provided
+if (process.env.SENTRY_DSN) {
+  errorTracker.initialize({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0.1'),
+    release: process.env.npm_package_version
+  });
+}
 
 // Initialize controllers
 const authController = new AuthenticationController();
 const userController = new UserController();
 
-// 1. Logging (should be first to capture all requests)
-app.use(requestLogger);
+// 1. Comprehensive logging middleware (should be first)
+app.use(...loggingMiddleware);
 
 // 2. DDoS Protection and IP Blocking
 app.use(ddosDetector);
@@ -42,17 +56,47 @@ app.use('/api', progressiveLimiter);
 app.use('/api', apiLimiter);
 
 // 7. Error tracking for abuse detection
-app.use(errorTracker);
+app.use(abuseDetector);
 
 // 8. API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// 9. Public Routes
+// 9. Enhanced Health Check
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'UP' });
+  const healthStatus = performanceMonitor.getHealthStatus();
+  const memoryUsage = performanceMonitor.getMemoryUsage();
+  
+  res.status(200).json({
+    status: 'UP',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    performance: healthStatus,
+    memory: {
+      used: memoryUsage.heapUsed,
+      total: memoryUsage.heapTotal,
+      external: memoryUsage.external
+    },
+    analytics: {
+      totalEvents: analyticsService.getAnalyticsData().userEvents.length,
+      activeUsers: analyticsService.getAnalyticsData().activeUsers
+    }
+  });
 });
 
-// 10. Protected API Routes
+// 10. Monitoring endpoints
+app.get('/api/monitoring/metrics', apiKeyAuth, (req, res) => {
+  const analytics = analyticsService.getAnalyticsData();
+  const performance = performanceMonitor.getHealthStatus();
+  
+  res.json({
+    analytics,
+    performance,
+    requestMetrics: performanceMonitor.getRequestMetrics(100),
+    customMetrics: performanceMonitor.getCustomMetrics(100)
+  });
+});
+
+// 11. Protected API Routes
 app.use('/api', apiKeyAuth);
 
 // Authentication endpoints with stricter rate limiting
@@ -158,5 +202,7 @@ app.post('/api/analytics/reports', apiKeyAuth, generateReport);
 
 // Export Route
 app.get('/api/analytics/export', apiKeyAuth, exportData);
+
+
 
 export default app;
