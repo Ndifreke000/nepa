@@ -1,0 +1,27 @@
+{
+  "app": {
+    "title": "Paiements Stellar NEPA",
+    "header": "Paiements Stellar NEPA"
+  },
+  "wallet": {
+    "connect": "Connecter le Portefeuille",
+    "connected": "Connecté : {{address}}"
+  },
+  "payment": {
+    "title": "Envoyer un Paiement",
+    "destination_placeholder": "Adresse de Destination",
+    "amount_placeholder": "Montant (XLM)",
+    "pay_button": "Payer la Facture",
+    "processing": "Traitement...",
+    "success": "Paiement Réussi !"
+  },
+  "language": {
+    "select": "Choisir la langue"
+  },
+  "common": {
+    "error": "Erreur",
+    "loading": "Chargement...",
+    "cancel": "Annuler",
+    "confirm": "Confirmer"
+  }
+}
