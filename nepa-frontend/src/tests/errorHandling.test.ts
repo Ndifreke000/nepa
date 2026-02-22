@@ -18,8 +18,16 @@ describe('Network Error Handling', () => {
 
   describe('Network Status Detection', () => {
     test('should detect offline status', async () => {
+      // Mock fetch for testing
+      global.fetch = jest.fn();
+
+      // Mock setTimeout for testing
+      global.setTimeout = jest.fn((fn, delay) => {
+        return setTimeout(fn, delay);
+      });
+
       // Mock fetch to simulate network failure
-      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+      global.fetch.mockRejectedValue(new Error('Network error'));
       
       const isOnline = await networkService.checkConnection();
       expect(isOnline).toBe(false);
