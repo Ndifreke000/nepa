@@ -5,7 +5,8 @@
   },
   "wallet": {
     "connect": "Connect Wallet",
-    "connected": "Connected: {{address}}"
+    "connected": "Connected: {{address}}",
+    "connection_failed": "Failed to connect wallet"
   },
   "payment": {
     "title": "Send Payment",
@@ -13,7 +14,8 @@
     "amount_placeholder": "Amount (XLM)",
     "pay_button": "Pay Bill",
     "processing": "Processing...",
-    "success": "Payment Successful!"
+    "success": "Payment Successful!",
+    "transaction_failed": "Transaction failed"
   },
   "language": {
     "select": "Select Language"
